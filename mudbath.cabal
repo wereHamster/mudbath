@@ -1,0 +1,30 @@
+name:                mudbath
+version:             0.1.0.0
+license:             OtherLicense
+license-file:        UNLICENSE
+author:              Tomas Carnecky
+maintainer:          tomas.carnecky@gmail.com
+category:            Testing
+build-type:          Simple
+cabal-version:       >=1.8
+
+Executable mudbath
+    Main-Is:        Main.hs
+
+    Build-Depends:  aeson         >= 0
+    Build-Depends:  base          >= 4.0 && < 5
+    Build-Depends:  bytestring    >= 0
+    Build-Depends:  directory     >= 0
+    Build-Depends:  http-conduit  >= 0
+    Build-Depends:  http-types    >= 0
+    Build-Depends:  process       >= 0
+    Build-Depends:  random        >= 0
+    Build-Depends:  snap-core     >= 0
+    Build-Depends:  snap-server   >= 0
+    Build-Depends:  stm           >= 0
+    Build-Depends:  transformers  >= 0
+
+    Ghc-Options:    -threaded
+
+    Extensions:     OverloadedStrings
+    Extensions:     ScopedTypeVariables
