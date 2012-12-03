@@ -140,7 +140,7 @@ build payload commit = do
 
     test _ Error = return Error
     test path _ = do
-        exitCode <- spawn $ (proc "sh" [ "-c", "set -e; npm install 1>/dev/null 2>&1; make test" ]) { cwd = Just path }
+        exitCode <- spawn $ (proc "./scripts/ci" []) { cwd = Just path }
         case exitCode of
             ExitSuccess -> return Success
             otherwise   -> return Failure
