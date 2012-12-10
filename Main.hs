@@ -1,34 +1,33 @@
 module Main where
 
-import Snap.Core
-import Snap.Http.Server
+import           Snap.Core
+import           Snap.Http.Server
 
-import Data.Aeson hiding (Success, Error)
-import Data.ByteString.Lazy (fromChunks)
-import Data.List
-import Data.Maybe
+import           Data.Aeson hiding (Success, Error)
 import qualified Data.ByteString.Char8 as C
+import           Data.ByteString.Lazy (fromChunks)
+import           Data.List
+import           Data.Maybe
 
-import Control.Applicative
-import Control.Arrow
-import Control.Concurrent (forkIO)
-import Control.Concurrent.STM
-import Control.Concurrent.STM.TQueue
-import Control.Concurrent.STM.TVar
-import Control.Exception
+import           Control.Applicative
+import           Control.Arrow
+import           Control.Concurrent (forkIO)
+import           Control.Concurrent.STM
+import           Control.Concurrent.STM.TQueue
+import           Control.Exception
 import qualified Control.Exception.Base as CE
-import Control.Monad
-import Control.Monad.IO.Class
+import           Control.Monad
+import           Control.Monad.IO.Class
 
-import System.Directory
-import System.Environment (getEnv)
-import System.Exit
-import System.Process (createProcess, proc, waitForProcess, CreateProcess(..))
+import           System.Directory
+import           System.Environment (getEnv)
+import           System.Exit
 import qualified System.IO.Error as E
-import System.Random
+import           System.Process (createProcess, proc, waitForProcess, CreateProcess(..))
+import           System.Random
 
-import Network.HTTP.Conduit (RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl, withManager, applyBasicAuth)
-import Network.HTTP.Types.Method (methodPost)
+import           Network.HTTP.Conduit (RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl, withManager, applyBasicAuth)
+import           Network.HTTP.Types.Method (methodPost)
 
 
 data Identity = Identity {
