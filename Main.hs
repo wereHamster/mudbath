@@ -5,6 +5,7 @@ import           Snap.Http.Server
 
 import           Data.Aeson hiding (Success, Error)
 import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString as BS
 import           Data.ByteString.Lazy (fromChunks)
 import           Data.List
 import           Data.Maybe
@@ -28,6 +29,8 @@ import           System.Random
 
 import           Network.HTTP.Conduit (RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl, withManager, applyBasicAuth)
 import           Network.HTTP.Types.Method (methodPost)
+
+import           Paths_mudbath (version)
 
 
 data Identity = Identity {
@@ -165,9 +168,10 @@ updateCommitStatus repo id status = do
         req <- parseUrl url
 
         let body = RequestBodyLBS $ fromChunks [ "{\"state\":\"", (showBS status), "\"}" ]
+        let userAgent   = ("User-Agent", BS.concat [ "mudbath/", (C.pack $ show version) ])
         let contentType = ("Content-Type","application/json")
         let tokenHeader = ("Authorization", C.pack $ "token " ++ token)
-        let req' = req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = contentType : tokenHeader : requestHeaders req }
+        let req' = req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = userAgent : contentType : tokenHeader : requestHeaders req }
 
         -- resp <- withManager $ httpLbs req'
         return ()
