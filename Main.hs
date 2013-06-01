@@ -142,7 +142,7 @@ build payload commit = do
 
     test _ Error = return Error
     test path _ = do
-        exitCode <- spawn $ (proc "./scripts/ci" []) { cwd = Just path }
+        exitCode <- spawn $ (proc "./script/cibuild" []) { cwd = Just path }
         case exitCode of
             ExitSuccess -> return Success
             otherwise   -> return Failure
@@ -173,7 +173,7 @@ updateCommitStatus repo id status = do
         let tokenHeader = ("Authorization", C.pack $ "token " ++ token)
         let req' = req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = userAgent : contentType : tokenHeader : requestHeaders req }
 
-        -- resp <- withManager $ httpLbs req'
+        resp <- withManager $ httpLbs req'
         return ()
 
 notifyCampfire payload commit status = do
@@ -187,7 +187,6 @@ notifyCampfire payload commit status = do
 
         let msg = "Build " ++ (ref payload) ++ "@" ++ (Data.List.take 7 . Main.id $ commit)
         let message = msg ++ ": " ++ (show $ status)
-        putStrLn message
 
         let body = RequestBodyBS $ C.pack $ "{\"message\":\"" ++ message ++ "\"}"
         let contentType = ("Content-Type","application/json")
