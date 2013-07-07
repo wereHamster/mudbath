@@ -8,14 +8,11 @@ import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString as BS
 import           Data.ByteString.Lazy (fromChunks)
 import           Data.List
-import           Data.Maybe
 
 import           Control.Applicative
 import           Control.Arrow
 import           Control.Concurrent (forkIO)
 import           Control.Concurrent.STM
-import           Control.Concurrent.STM.TQueue
-import           Control.Exception
 import qualified Control.Exception.Base as CE
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -23,7 +20,6 @@ import           Control.Monad.IO.Class
 import           System.Directory
 import           System.Environment (getEnv)
 import           System.Exit
-import qualified System.IO.Error as E
 import           System.Process (createProcess, proc, waitForProcess, CreateProcess(..))
 import           System.Random
 
@@ -71,6 +67,7 @@ instance FromJSON Payload where
 
 data Status = Pending | Success | Failure | Error deriving (Eq, Show)
 
+showBS :: Status -> BS.ByteString
 showBS Pending = "pending"
 showBS Success = "success"
 showBS Failure = "failure"
@@ -80,6 +77,7 @@ getEnvVar :: String -> IO (Either IOError String)
 getEnvVar = CE.try . getEnv
 
 
+setupScript :: String -> String -> String -> String -> String
 setupScript cachePath buildPath url commit = Data.List.intercalate ";" [
         "set -e",
         "if test -d " ++ cachePath,
@@ -155,7 +153,7 @@ build payload commit = do
 
 updateCommitStatus :: Repository -> String -> Status -> IO ()
 updateCommitStatus repo id status =
-    getEnvVar "GITHUB" >>= either (\x -> return ()) sendRequest
+    getEnvVar "GITHUB" >>= either (\_ -> return ()) sendRequest
 
   where
 
@@ -174,8 +172,9 @@ updateCommitStatus repo id status =
 
         void $ withManager $ httpLbs req'
 
+notifyCampfire :: Payload -> Commit -> Status -> IO ()
 notifyCampfire payload commit status =
-    getEnvVar "CAMPFIRE" >>= either (\x -> return ()) sendRequest
+    getEnvVar "CAMPFIRE" >>= either (\_ -> return ()) sendRequest
 
   where
 
@@ -196,13 +195,13 @@ notifyCampfire payload commit status =
 
 hook :: TQueue Payload -> Snap ()
 hook queue = do
-    payload <- getParam "payload"
-    case payload of
+    payloadParam <- getParam "payload"
+    case payloadParam of
         Nothing -> pass
-        Just x  ->
-            case decode $ fromChunks [ x ] of
+        Just payloadByteString ->
+            case decode $ fromChunks [ payloadByteString ] of
                 Nothing -> pass
-                Just x  -> void $ liftIO $ queueBuild x
+                Just payload -> void $ liftIO $ queueBuild payload
 
   where
 
@@ -213,8 +212,8 @@ hook queue = do
 main :: IO ()
 main = do
     queue <- newTQueueIO
-    forkIO $ backgroundBuildThread queue
-    quickHttpServe (app queue)
+    void $ forkIO $ backgroundBuildThread queue
+    quickHttpServe (requestHandler queue)
 
   where
 
@@ -227,5 +226,5 @@ main = do
 
     -- Only POST request to /hook are handled. To everything else we respond
     -- with 200 OK.
-    app queue = post "hook" (hook queue) <|> writeText "ok\n"
+    requestHandler queue = post "hook" (hook queue) <|> writeText "ok\n"
     post dir = path dir . Snap.Core.method POST
