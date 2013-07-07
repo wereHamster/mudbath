@@ -151,11 +151,10 @@ build payload commit = do
         updateCommitStatus repo id status
         when (status /= Pending) $ notifyCampfire payload commit status
 
-    cleanup path = do
-        removeDirectoryRecursive path
+    cleanup = removeDirectoryRecursive
 
 updateCommitStatus :: Repository -> String -> Status -> IO ()
-updateCommitStatus repo id status = do
+updateCommitStatus repo id status =
     getEnvVar "GITHUB" >>= either (\x -> return ()) sendRequest
 
   where
@@ -167,16 +166,15 @@ updateCommitStatus repo id status = do
         let url = "https://api.github.com/repos/" ++ owner ++ "/" ++ name ++ "/statuses/" ++ id
         req <- parseUrl url
 
-        let body = RequestBodyLBS $ fromChunks [ "{\"state\":\"", (showBS status), "\"}" ]
-        let userAgent   = ("User-Agent", BS.concat [ "mudbath/", (C.pack $ show version) ])
+        let body = RequestBodyLBS $ fromChunks [ "{\"state\":\"", showBS status, "\"}" ]
+        let userAgent   = ("User-Agent", BS.concat [ "mudbath/", C.pack $ show version ])
         let contentType = ("Content-Type","application/json")
         let tokenHeader = ("Authorization", C.pack $ "token " ++ token)
         let req' = req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = userAgent : contentType : tokenHeader : requestHeaders req }
 
-        resp <- withManager $ httpLbs req'
-        return ()
+        void $ withManager $ httpLbs req'
 
-notifyCampfire payload commit status = do
+notifyCampfire payload commit status =
     getEnvVar "CAMPFIRE" >>= either (\x -> return ()) sendRequest
 
   where
@@ -185,15 +183,14 @@ notifyCampfire payload commit status = do
         let [ domain, token, room ] = Data.List.words config
         req <- parseUrl $ "https://" ++ domain ++ ".campfirenow.com/room/" ++ room ++ "/speak.json"
 
-        let msg = "Build " ++ (ref payload) ++ "@" ++ (Data.List.take 7 . Main.id $ commit)
-        let message = msg ++ ": " ++ (show $ status)
+        let msg = "Build " ++ ref payload ++ "@" ++ (Data.List.take 7 . Main.id $ commit)
+        let message = msg ++ ": " ++ show status
 
         let body = RequestBodyBS $ C.pack $ "{\"message\":\"" ++ message ++ "\"}"
         let contentType = ("Content-Type","application/json")
         let req' = applyBasicAuth (C.pack token) "X" $ req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = contentType : requestHeaders req }
 
-        resp <- withManager $ httpLbs req'
-        return ()
+        void $ withManager $ httpLbs req'
 
 
 
@@ -202,10 +199,10 @@ hook queue = do
     payload <- getParam "payload"
     case payload of
         Nothing -> pass
-        Just x  -> do
-            case (decode $ fromChunks [ x ]) of
+        Just x  ->
+            case decode $ fromChunks [ x ] of
                 Nothing -> pass
-                Just x  -> liftIO $ queueBuild x >> return ()
+                Just x  -> void $ liftIO $ queueBuild x
 
   where
 
@@ -225,10 +222,10 @@ main = do
     -- each one. It builds each commit individually, not just the last one.
     backgroundBuildThread queue = do
         payload <- atomically $ readTQueue queue
-        mapM (build payload) (commits payload)
+        mapM_ (build payload) (commits payload)
         backgroundBuildThread queue
 
     -- Only POST request to /hook are handled. To everything else we respond
     -- with 200 OK.
     app queue = post "hook" (hook queue) <|> writeText "ok\n"
-    post dir = (path dir) . (Snap.Core.method POST)
+    post dir = path dir . Snap.Core.method POST
