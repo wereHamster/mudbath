@@ -1,13 +1,19 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
 import           Snap.Core
 import           Snap.Http.Server
 
 import           Data.Aeson hiding (Success, Error)
+import           Data.Aeson.Types (parseMaybe)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString as BS
-import           Data.ByteString.Lazy (fromChunks)
 import           Data.List
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           Data.Text.Encoding
+import           Data.Monoid
 
 import           Control.Applicative
 import           Control.Arrow
@@ -20,74 +26,30 @@ import           Control.Monad.IO.Class
 import           System.Directory
 import           System.Environment (getEnv)
 import           System.Exit
-import           System.Process (createProcess, proc, waitForProcess, CreateProcess(..))
+import           System.Process (CreateProcess, createProcess, proc, waitForProcess)
 import           System.Random
 
 import           Network.HTTP.Conduit (RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl, withManager, applyBasicAuth)
 import           Network.HTTP.Types.Method (methodPost)
 
-import           Paths_mudbath (version)
+import           GitHub.Types
 
-
-data Identity = Identity {
-    email, name, username :: String
-} deriving (Show)
-
-instance FromJSON Identity where
-    parseJSON (Object x) = Identity <$> (x .: "email") <*> (x .: "name") <*> (x .: "username")
-    parseJSON _          = mzero
-
-
-data Commit = Commit {
-    id :: String, author, committer :: Identity
-} deriving (Show)
-
-instance FromJSON Commit where
-    parseJSON (Object x) = Commit <$> (x .: "id") <*> (x .: "author") <*> (x .: "committer")
-    parseJSON _          = mzero
-
-
-data Repository = Repository {
-    ownerName, repoName :: String
-} deriving (Show)
-
-instance FromJSON Repository where
-    parseJSON (Object x) = Repository <$> (x .: "owner" >>= (.: "name")) <*> (x .: "name")
-    parseJSON _          = mzero
-
-
-data Payload = Payload {
-    repository :: Repository, ref, before, after :: String, commits :: [ Commit ]
-} deriving (Show)
-
-instance FromJSON Payload where
-    parseJSON (Object x) = Payload <$> (x .: "repository") <*> (x .: "ref") <*> (x .: "before") <*> (x .: "after") <*> (x .: "commits")
-    parseJSON _          = mzero
-
-
-data Status = Pending | Success | Failure | Error deriving (Eq, Show)
-
-showBS :: Status -> BS.ByteString
-showBS Pending = "pending"
-showBS Success = "success"
-showBS Failure = "failure"
-showBS Error   = "error"
 
 getEnvVar :: String -> IO (Either IOError String)
 getEnvVar = CE.try . getEnv
 
 
-setupScript :: String -> String -> String -> String -> String
-setupScript cachePath buildPath url commit = Data.List.intercalate ";" [
-        "set -e",
-        "if test -d " ++ cachePath,
-        "then cd " ++ cachePath ++ " && git fetch --all --quiet",
-        "else git clone --mirror --quiet " ++ url ++ " " ++ cachePath,
-        "fi",
-        "rm -rf " ++ buildPath,
-        "git clone --quiet --reference " ++ cachePath ++ " " ++ url ++ " " ++ buildPath,
-        "cd " ++ buildPath,
-        "git checkout -q " ++ commit
+setupScript :: Text -> Text -> Text -> Text -> String
+setupScript cachePath buildPath url commit = T.unpack $ mconcat $ Data.List.intersperse ";"
+    [ "set -e"
+    , "if test -d " <> cachePath
+    , "then cd " <> cachePath <> " && git fetch --all --quiet"
+    , "else git clone --mirror --quiet " <> url <> " " <> cachePath
+    , "fi"
+    , "rm -rf " <> buildPath
+    , "git clone --quiet --reference " <> cachePath <> " " <> url <> " " <> buildPath
+    , "cd " <> buildPath
+    , "git checkout -q " <> commit
     ]
 
 randomString :: RandomGen d => Int -> d -> (String, d)
@@ -104,108 +66,144 @@ randomString len =
         | i < 52 = toEnum $ i + fromEnum 'a' - 26
         | otherwise = toEnum $ i + fromEnum '0' - 52
 
-generateRandomString :: IO String
+generateRandomString :: IO Text
 generateRandomString = do
-        stdgen <- newStdGen
-        return $ fst $ randomString 10 stdgen
+    stdgen <- newStdGen
+    return $ T.pack $ fst $ randomString 10 stdgen
 
-build :: Payload -> Commit -> IO ()
-build payload commit = do
-    notify Pending
 
-    -- Generate a random string, it's used to create a directory in which
-    -- this build takes place. When done, we clean up this directory.
-    buildId <- generateRandomString
-    let path = "/tmp/mudbath/build/" ++ buildId
+buildDirectory :: IO Text
+buildDirectory = mappend "/tmp/mudbath/build/" <$> generateRandomString
 
-    clone path >>= test path >>= notify >> cleanup path
+
+spawn :: CreateProcess -> IO ExitCode
+spawn x = do
+    (_, _, _, p) <- createProcess x
+    waitForProcess p
+
+
+processEvent :: Event -> IO ()
+processEvent (DeploymentEventType de) = do
+    updateDeploymentStatus de Pending
+
+    tmp <- buildDirectory
+    deploy de tmp
+
+processEvent (DeploymentStatusEventType dse) = do
+    notify dse
+
+processEvent _ = do
+    return ()
+
+
+notify :: DeploymentStatusEvent -> IO ()
+notify dse = do
+    token <- getEnvVar "SLACK_TOKEN"
+    team  <- getEnvVar "SLACK_TEAM"
+
+    case (team, token) of
+        (Right t, Right tok) -> sendRequest t tok
+        _ -> return ()
 
   where
-    repo  = repository payload
-    id    = Main.id commit
-    owner = ownerName repo
-    name  = repoName repo
+    state      = deploymentStatusEventState      dse
+    deployment = deploymentStatusEventDeployment dse
+    --repo       = deploymentStatusEventRepository dse
 
-    spawn x = do
-        (_, _, _, p) <- createProcess x
-        waitForProcess p
+    repoOwner  = "???" -- repositoryOwnerName repo
+    repoName   = "???" -- repositoryName      repo
 
-    clone path = do
-        let cachePath = "/tmp/mudbath/cache/" ++ name
-        let url = "git@github.com:" ++ owner ++ "/" ++ name ++ ".git"
-        exitCode <- spawn $ proc "sh" [ "-c", setupScript cachePath path url id ]
+    env        = deploymentEnvironment deployment
+
+    sendRequest team token = do
+        req <- parseUrl $ "https://" <> team <> ".slack.com/services/hooks/incoming-webhook?token=" <> token
+
+        let msg = "Somebody is deploying " <> repoOwner <> "/" <> repoName <> " to " <> env
+        let text = msg <> ": " <> T.pack (show state)
+
+        let body = RequestBodyBS $ C.pack $ T.unpack $ "{\"text\":\"" <> text <> "\"}"
+        let contentType = ("Content-Type","application/json")
+        let req' = req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = contentType : requestHeaders req }
+
+        void $ withManager $ httpLbs req'
+
+
+
+deploy :: DeploymentEvent -> Text -> IO ()
+deploy de tmp = do
+    clone >>= test >>= updateDeploymentStatus de >> cleanup
+
+  where
+    sha   = deploymentEventSha de
+    repo  = deploymentEventRepository de
+    dEnv  = deploymentEventEnvironment de
+    owner = repositoryOwnerName repo
+    name  = repositoryName repo
+
+    clone = do
+        let cachePath = "/tmp/mudbath/cache/" <> name
+        let url = "git@github.com:" <> owner <> "/" <> name <> ".git"
+        exitCode <- spawn $ proc "sh" [ "-c", setupScript cachePath tmp url sha ]
+        print $ "clone " ++ show exitCode
         case exitCode of
             ExitSuccess -> return Success
-            otherwise   -> return Error
+            _           -> return Error
 
-    test _ Error = return Error
-    test path _ = do
-        exitCode <- spawn $ (proc "./script/cibuild" []) { cwd = Just path }
+    test Error = return Error
+    test _ = do
+        let script = "./config/" <> owner <> "/" <> name <> "/" <> dEnv
+        exitCode <- spawn $ proc (T.unpack script) [T.unpack tmp]
+        print $ "test " ++ show exitCode
         case exitCode of
             ExitSuccess -> return Success
-            otherwise   -> return Failure
+            _           -> return Failure
 
-    notify status = do
-        updateCommitStatus repo id status
-        when (status /= Pending) $ notifyCampfire payload commit status
+    cleanup = removeDirectoryRecursive $ T.unpack tmp
 
-    cleanup = removeDirectoryRecursive
 
-updateCommitStatus :: Repository -> String -> Status -> IO ()
-updateCommitStatus repo id status =
+updateDeploymentStatus :: DeploymentEvent -> State -> IO ()
+updateDeploymentStatus de state =
     getEnvVar "GITHUB" >>= either (\_ -> return ()) sendRequest
 
   where
+    dId   = T.pack $ show $ deploymentEventId de
+    repo  = deploymentEventRepository de
+    owner = repositoryOwnerName repo
+    name  = repositoryName repo
+    url   = "https://api.github.com/repos/" <> owner <> "/" <> name <> "/deployments/" <> dId <> "/statuses"
+
 
     sendRequest token = do
-        let owner = ownerName repo
-        let name  = repoName repo
+        req <- parseUrl (T.unpack url)
 
-        let url = "https://api.github.com/repos/" ++ owner ++ "/" ++ name ++ "/statuses/" ++ id
-        req <- parseUrl url
-
-        let body = RequestBodyLBS $ fromChunks [ "{\"state\":\"", showBS status, "\"}" ]
-        let userAgent   = ("User-Agent", BS.concat [ "mudbath/", C.pack $ show version ])
+        let body = RequestBodyLBS $ encode $ CreateDeploymentStatusRequest state Nothing Nothing
+        let userAgent   = ("User-Agent", BS.concat [ "mudbath/0" ])
         let contentType = ("Content-Type","application/json")
-        let tokenHeader = ("Authorization", C.pack $ "token " ++ token)
-        let req' = req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = userAgent : contentType : tokenHeader : requestHeaders req }
-
-        void $ withManager $ httpLbs req'
-
-notifyCampfire :: Payload -> Commit -> Status -> IO ()
-notifyCampfire payload commit status =
-    getEnvVar "CAMPFIRE" >>= either (\_ -> return ()) sendRequest
-
-  where
-
-    sendRequest config = do
-        let [ domain, token, room ] = Data.List.words config
-        req <- parseUrl $ "https://" ++ domain ++ ".campfirenow.com/room/" ++ room ++ "/speak.json"
-
-        let msg = "Build " ++ ref payload ++ "@" ++ (Data.List.take 7 . Main.id $ commit)
-        let message = msg ++ ": " ++ show status
-
-        let body = RequestBodyBS $ C.pack $ "{\"message\":\"" ++ message ++ "\"}"
-        let contentType = ("Content-Type","application/json")
-        let req' = applyBasicAuth (C.pack token) "X" $ req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = contentType : requestHeaders req }
+        let acceptHeader = ("Accept", "application/vnd.github.cannonball-preview+json")
+        let req' = applyBasicAuth (C.pack token) "x-oauth-basic" $ req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = userAgent : contentType : acceptHeader : requestHeaders req }
 
         void $ withManager $ httpLbs req'
 
 
 
-hook :: TQueue Payload -> Snap ()
+hook :: TQueue Event -> Snap ()
 hook queue = do
-    payloadParam <- getParam "payload"
-    case payloadParam of
-        Nothing -> pass
-        Just payloadByteString ->
-            case decode $ fromChunks [ payloadByteString ] of
-                Nothing -> pass
-                Just payload -> void $ liftIO $ queueBuild payload
+    hdrs <- headers <$> getRequest
+    body <- readRequestBody (100 * 1000)
+
+    let mbEvent = do
+        eventName <- getHeader "X-GitHub-Event" hdrs
+        value     <- decode body
+        parseMaybe (eventParser $ decodeUtf8 eventName) value
+
+    liftIO $ print mbEvent
+    case mbEvent :: Maybe Event of
+        Nothing -> return ()
+        Just ev -> void $ liftIO $ queueBuild ev
 
   where
 
-    queueBuild payload = atomically $ writeTQueue queue payload
+    queueBuild de = atomically $ writeTQueue queue de
 
 
 
@@ -220,11 +218,11 @@ main = do
     -- The background build thread reads payloads from the queue and builds
     -- each one. It builds each commit individually, not just the last one.
     backgroundBuildThread queue = do
-        payload <- atomically $ readTQueue queue
-        mapM_ (build payload) (commits payload)
+        de <- atomically $ readTQueue queue
+        processEvent de
         backgroundBuildThread queue
 
-    -- Only POST request to /hook are handled. To everything else we respond
+    -- Only POST request to /webhook are handled. To everything else we respond
     -- with 200 OK.
-    requestHandler queue = post "hook" (hook queue) <|> writeText "ok\n"
-    post dir = path dir . Snap.Core.method POST
+    requestHandler queue = post "webhook" (hook queue) <|> writeText "ok\n"
+    post p = path p . Snap.Core.method POST
