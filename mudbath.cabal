@@ -11,19 +11,19 @@ cabal-version:       >=1.8
 Executable mudbath
     Main-Is:        Main.hs
 
-    Build-Depends:  aeson         >= 0
+    Build-Depends:  aeson
     Build-Depends:  base          >= 4.0 && < 5
-    Build-Depends:  bytestring    >= 0
-    Build-Depends:  directory     >= 0
+    Build-Depends:  bytestring
+    Build-Depends:  directory
     Build-Depends:  github-types
-    Build-Depends:  http-conduit  >= 0
-    Build-Depends:  http-types    >= 0
-    Build-Depends:  process       >= 0
-    Build-Depends:  random        >= 0
-    Build-Depends:  snap-core     >= 0
-    Build-Depends:  snap-server   >= 0
-    Build-Depends:  stm           >= 0
-    Build-Depends:  text          >= 0
-    Build-Depends:  transformers  >= 0
+    Build-Depends:  http-conduit
+    Build-Depends:  http-types
+    Build-Depends:  process
+    Build-Depends:  random
+    Build-Depends:  snap-core
+    Build-Depends:  snap-server
+    Build-Depends:  stm
+    Build-Depends:  text
+    Build-Depends:  transformers
 
     Ghc-Options:    -threaded -Wall
