@@ -196,10 +196,11 @@ hook queue = do
         value     <- decode body
         parseMaybe (eventParser $ decodeUtf8 eventName) value
 
-    liftIO $ print mbEvent
     case mbEvent :: Maybe Event of
         Nothing -> return ()
-        Just ev -> void $ liftIO $ queueBuild ev
+        Just ev -> case ev of
+            (DeploymentEventType _) -> void $ liftIO $ queueBuild ev
+            _                       -> void $ liftIO $ processEvent ev
 
   where
 
