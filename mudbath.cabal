@@ -27,6 +27,3 @@ Executable mudbath
     Build-Depends:  transformers  >= 0
 
     Ghc-Options:    -threaded -Wall
-
-    Extensions:     OverloadedStrings
-    Extensions:     ScopedTypeVariables
