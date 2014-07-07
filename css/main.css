@@ -1,0 +1,420 @@
+/* general */
+
+* {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+body {
+  font: 400 16px/1.6 "Open Sans", sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #777;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+h1, h2, h3 {
+  margin: 5px 0;
+  font-weight: 100;
+  color: #353535;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-size: 3em;
+  margin-top: 80px;
+}
+
+h2 {
+  font-size: 2em;
+  margin-top: 30px;
+}
+
+h3 {
+  font-size: 1.6em;
+  margin-top: 0;
+}
+
+p em {
+  font-weight: bold;
+  font-style: normal;
+  color: #353535;
+}
+
+p {
+    margin: 20px 0;
+    max-width: 40rem;
+}
+
+strong {
+  color: #353535;
+}
+
+.inner {
+    margin-top: 100px;
+}
+.scroll header {
+    border-bottom: 1px solid #ddd;
+    box-shadow: 0 0 4px #eee;
+}
+
+#content {
+    margin: 0 3rem 6rem;
+}
+
+#home h1 {
+  font-weight: 100;
+  font-size: 3rem;
+}
+
+#home .tag {
+  font-size: 1.33rem;
+  font-weight: 100;
+  color: #666;
+  list-style-type: none;
+  margin-top: 3rem;
+  max-width: 40rem;
+}
+
+#guide p, #guide ul {
+    font-size: 1em;
+    max-width: 40rem;
+}
+
+#faq h1 {
+  font-weight: 100;
+  font-size: 1.6em;
+  margin-top: 80px;
+}
+
+li code {
+  color: #353535;
+}
+
+section section p {
+  width: 60%;
+}
+
+/* links */
+
+a {
+  color: #259dff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+:target {
+  padding-top: 100px;
+}
+
+nav a {
+  font-size: 14px;
+  color: #7B838A;
+}
+
+/* logo */
+
+.logo {
+  margin-top: 180px;
+  margin-bottom: 180px;
+  margin-left: 80px;
+  padding-left: 40px;
+  width: 440px;
+  border-left: 1px dotted #eee;
+  -webkit-font-smoothing: antialiased;
+}
+
+.logo .mudbath {
+  font-weight: 400;
+  color: #353535;
+  width: 100%;
+}
+
+.logo .description {
+  font-weight: 100;
+  color: #cecece;
+  line-height: .75;
+}
+
+header .logo em {
+  font-style: normal;
+  font-weight: 100;
+  font-size: 12px;
+  color: #999;
+  margin-left: 5px;
+}
+
+.logo a {
+  color: #cecece;
+}
+
+.logo a:hover {
+  text-decoration: none;
+  color: #858585;
+}
+
+/* secondary page logo */
+
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: rgba(255,255,255,1);
+    width: 100%;
+    height: 3rem;
+    z-index: 100;
+}
+
+header .logo {
+    position: fixed;
+    top: 0;
+    margin: 0;
+    padding: 0 25px;
+    width: auto;
+    border-left: none;
+    height: 3rem;
+    line-height: 3rem;
+}
+
+header .logo .mudbath {
+  font-size: 25px;
+}
+
+.inner #logo .description {
+  font-size: 20px;
+}
+
+/* code */
+
+p code {
+  background: #efefef;
+  border: 1px solid #eaeaea;
+  font-family: monospace;
+  font-size: .8em;
+  padding: 2px 3px;
+  -webkit-border-radius: 3px;
+  color: #353535;
+}
+
+pre {
+  color: #353535;
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 20px 0;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e7e7e7;
+  border-bottom: 1px solid #ddd;
+  -webkit-box-shadow: 0 1px 3px 0 #eee;
+  -webkit-border-radius: 3px;
+}
+
+pre code {
+  font-family: monospace;
+  font-size: .8em;
+}
+
+/* navigation */
+
+nav {
+  position: fixed;
+  top: 0;
+  right: 20px;
+  z-index: 100;
+  height: 3rem;
+  line-height: 3rem;
+}
+
+nav a {
+  margin: 0 5px;
+  padding: 0 3px 2px;
+}
+
+nav a:last-child {
+  border-right: none;
+}
+
+nav a.active {
+  color: #353535;
+  border-bottom: 3px solid #FF6440;
+}
+
+nav a:hover {
+  border-bottom: 3px solid #6B90D4;
+  text-decoration: none;
+}
+
+/* clearfix */
+
+.clearfix:after {
+  content: ".";
+  display: block;
+  clear: both;
+  visibility: hidden;
+  line-height: 0;
+  height: 0;
+}
+
+.clearfix {
+  display: inline-block;
+}
+
+
+.command-title {
+    font-size: 1.4em;
+    font-weight: 400;
+    color: #111;
+    margin: 100px 0 10px;
+}
+
+.command-sequence {
+    padding: 0;
+    color: #353535;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 10px 0;
+    background: white;
+    border: 1px solid #d8d8d8;
+    border-bottom: 1px solid #ddd;
+    border-radius: 2px;
+}
+.command-sequence li {
+    list-style-type: none;
+    margin: 0;
+    padding: 5px 20px;
+    border-bottom: 1px solid #d8d8d8;
+    white-space: pre;
+    font-family: monospace;
+}
+.command-sequence li:last-child {
+    border-bottom: none;
+}
+
+.command-sequence .cmd {
+    background-color: #f0f0f0;
+    background-image: -webkit-linear-gradient(top, #f7f7f7, #f0f0f0);
+    padding: 10px 20px;
+}
+.command-sequence .cmd:before {
+    content: "$ ";
+}
+
+.command-sequence .out {
+    padding: 10px 20px;
+    box-shadow: 0 1px 3px #eee inset;
+}
+
+.github-repo-link {
+    font-size: 14px;
+}
+
+/* shadow */
+
+.shadow {
+  border: 1px solid #eee;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 60px rgba(0, 0, 0, 0.1) inset;
+  -webkit-box-shadow: 0 1px 4px rgba(0, 0, 0, 0.27), 0 0 60px rgba(0, 0, 0, 0.1) inset;
+  display: block;
+  padding: 8px;
+  background-color: white;
+  margin-bottom: 20px;
+}
+
+/* The shadow elements are the same except where they are anchored,
+ * their rotation origin and the skew/rotation direction. */
+
+/* Bottom right shadow */
+.shadow::after {
+  z-index: -1;
+  position: absolute;
+  background: transparent;
+  width: 40%;
+  height: 40%;
+  content: '';
+  right: 0;
+  bottom: 0;
+
+  transform-origin: right bottom;
+  -webkit-transform-origin: right bottom;
+  transform: skew(20deg) rotate(10deg);
+  -webkit-transform: skew(20deg) rotate(10deg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Bottom left shadow */
+.shadow::before {
+  z-index: -1;
+  position: absolute;
+  background: transparent;
+  width: 40%;
+  height: 40%;
+  content: '';
+  left: 0;
+  bottom: 0;
+
+  transform-origin: left bottom;
+  -webkit-transform-origin: left bottom;
+  transform: skew(-20deg) rotate(-10deg);
+  -webkit-transform: skew(-20deg) rotate(-10deg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  -webkit-box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.image-container {
+    max-width: 600px;
+}
+
+#menu {
+    position: fixed;
+    right: 30px;
+    top: 100px;
+    text-align: right;
+}
+#menu h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: normal;
+}
+#menu ul {
+    margin: 0;
+}
+#menu li {
+    list-style: none;
+}
+#menu li a {
+    color: #7B838A;
+}
+#menu li a.active {
+    color: #259dff;
+}
+
+.community-images {
+    list-style-type: none;
+    padding-left: 20px;
+}
+.community-images li .name {
+    font-weight: bold;
+    color: black;
+}
+.community-images li code {
+    font-size: 0.9em;
+}
+.value-prop {
+    font-size: 1.5em;
+    color: #999;
+}
+.value-prop em {
+    color: #353535;
+    font-style: normal;
+    font-weight: 600;
+}
