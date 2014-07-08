@@ -83,12 +83,11 @@ deploy de tmp = do
     sha   = deploymentEventSha de
     repo  = deploymentEventRepository de
     dEnv  = deploymentEventEnvironment de
-    owner = repositoryOwnerName repo
-    name  = repositoryName repo
+    repoName = repositoryFullName repo
 
     clone = do
-        let cachePath = "/tmp/mudbath/cache/" <> name
-        let url = "git@github.com:" <> owner <> "/" <> name <> ".git"
+        let cachePath = "/tmp/mudbath/cache/" <> repoName
+        let url = "git@github.com:" <> repoName <> ".git"
         exitCode <- spawn $ proc "sh" [ "-c", setupScript cachePath tmp url sha ]
         print $ "clone " ++ show exitCode
         case exitCode of
@@ -97,7 +96,7 @@ deploy de tmp = do
 
     test Error = return Error
     test _ = do
-        let script = "./config/" <> owner <> "/" <> name <> "/" <> dEnv
+        let script = "./config/" <> repoName <> "/" <> dEnv
         exitCode <- spawn $ proc (T.unpack script) [T.unpack tmp]
         print $ "test " ++ show exitCode
         case exitCode of

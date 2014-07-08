@@ -67,17 +67,19 @@ notifySlack ev = do
   where
     state      = deploymentStatusEventState      ev
     deployment = deploymentStatusEventDeployment ev
-    --repo       = deploymentStatusEventRepository dse
+    repo       = deploymentStatusEventRepository ev
 
-    repoOwner  = "???" -- repositoryOwnerName repo
-    repoName   = "???" -- repositoryName      repo
+    repoOwner  = repositoryOwner repo
+    repoName   = repositoryFullName repo
+
+    userName   = ownerName repoOwner
 
     env        = deploymentEnvironment deployment
 
     sendRequest team token = do
         req <- parseUrl $ "https://" <> team <> ".slack.com/services/hooks/incoming-webhook?token=" <> token
 
-        let msg = "Somebody is deploying " <> repoOwner <> "/" <> repoName <> " to " <> env
+        let msg = userName <> " is deploying " <> repoName <> " to " <> env
         let text = msg <> ": " <> T.pack (show state)
 
         let body = RequestBodyLBS $ encode $ SlackMessage text
