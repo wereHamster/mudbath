@@ -72,7 +72,7 @@ notifySlack ev = do
     repoOwner  = repositoryOwner repo
     repoName   = repositoryFullName repo
 
-    userName   = ownerName repoOwner
+    userName   = ownerLogin repoOwner
 
     env        = deploymentEnvironment deployment
 
