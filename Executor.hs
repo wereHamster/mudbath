@@ -97,6 +97,7 @@ deploy de tmp = do
     test Error = return Error
     test _ = do
         let script = "./config/" <> repoName <> "/" <> dEnv
+        print $ show $ "executing " <> script
         exitCode <- spawn $ proc (T.unpack script) [T.unpack tmp]
         print $ "test " ++ show exitCode
         case exitCode of
