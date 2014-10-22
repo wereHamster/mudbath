@@ -15,7 +15,7 @@ Executable mudbath
     Build-Depends:  base          >= 4.0 && < 5
     Build-Depends:  bytestring
     Build-Depends:  directory
-    Build-Depends:  github-types  >= 0.1.0.3
+    Build-Depends:  github-types  == 0.1.0.3
     Build-Depends:  http-conduit
     Build-Depends:  http-types
     Build-Depends:  process
