@@ -65,7 +65,8 @@ notifySlack ev = do
         Right (team, token) -> sendRequest team token
 
   where
-    state      = deploymentStatusEventState      ev
+    ds         = deploymentStatusEventDeploymentStatus ev
+    state      = deploymentStatusState           ds
     deployment = deploymentStatusEventDeployment ev
     repo       = deploymentStatusEventRepository ev
 

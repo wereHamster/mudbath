@@ -28,7 +28,7 @@ updateDeploymentStatus de state =
     getEnvVar "GITHUB_ACCESS_TOKEN" >>= either (\_ -> return ()) sendRequest
 
   where
-    dId      = T.pack $ show $ deploymentEventId de
+    dId      = T.pack $ show $ deploymentId $ deploymentEventDeployment de
     repo     = deploymentEventRepository de
     repoName = repositoryFullName repo
     url   = "https://api.github.com/repos/" <> repoName <> "/deployments/" <> dId <> "/statuses"

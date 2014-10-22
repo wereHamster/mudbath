@@ -80,9 +80,10 @@ deploy de tmp = do
     clone >>= test >>= updateDeploymentStatus de >> cleanup
 
   where
-    sha   = deploymentEventSha de
+    d     = deploymentEventDeployment de
+    sha   = deploymentSha d
     repo  = deploymentEventRepository de
-    dEnv  = deploymentEventEnvironment de
+    dEnv  = deploymentEnvironment d
     repoName = repositoryFullName repo
 
     clone = do
