@@ -14,6 +14,7 @@ import           Control.Concurrent (forkIO)
 import           Control.Concurrent.STM
 import           Control.Monad
 import           Control.Monad.IO.Class
+import           Control.Exception
 
 import           GitHub.Types
 import           Executor
@@ -24,17 +25,27 @@ import           Notifications
 main :: IO ()
 main = do
     queue <- newTQueueIO
-    void $ forkIO $ backgroundBuildThread queue
+
+    -- Fork the background build thead, Ignore all exceptions, because IO is
+    -- dirty and can throw exceptions at any time. And we don't actually care
+    -- about those, all we want is to keep the thread running. At any cost.
+
+    void $ forkIO $ forever $
+        backgroundBuildThread queue `catch` ignoreException
+
     quickHttpServe (requestHandler queue)
 
   where
 
-    -- The background build thread reads payloads from the queue and builds
-    -- each one. It builds each commit individually, not just the last one.
     backgroundBuildThread queue = do
         de <- atomically $ readTQueue queue
         processEvent de
-        backgroundBuildThread queue
+
+
+    ignoreException :: SomeException -> IO ()
+    ignoreException e = do
+        putStrLn $ "ignoreException: " ++ show e
+
 
     -- Only POST request to /webhook are handled. To everything else we respond
     -- with 200 OK.
