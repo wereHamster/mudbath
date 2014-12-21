@@ -8,6 +8,8 @@ import           Snap.Http.Server
 import           Data.Aeson hiding (Success, Error)
 import           Data.Aeson.Types (parseMaybe)
 import           Data.Text.Encoding
+import           Data.Maybe
+import qualified Data.ByteString.Char8 as BC8
 
 import           Control.Applicative
 import           Control.Concurrent (forkIO)
@@ -15,6 +17,8 @@ import           Control.Concurrent.STM
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Exception
+
+import           System.Environment
 
 import           GitHub.Types
 import           Executor
@@ -24,6 +28,8 @@ import           Notifications
 
 main :: IO ()
 main = do
+
+    hookPath <- fromMaybe "webhook" <$> lookupEnv "HOOKPATH"
     queue <- newTQueueIO
 
     -- Fork the background build thead, Ignore all exceptions, because IO is
@@ -33,7 +39,8 @@ main = do
     void $ forkIO $ forever $
         backgroundBuildThread queue `catch` ignoreException
 
-    quickHttpServe (requestHandler queue)
+    quickHttpServe $
+        path (BC8.pack hookPath) (method POST $ hook queue) <|> writeText "ok\n"
 
   where
 
@@ -46,11 +53,6 @@ main = do
     ignoreException e = do
         putStrLn $ "ignoreException: " ++ show e
 
-
-    -- Only POST request to /webhook are handled. To everything else we respond
-    -- with 200 OK.
-    requestHandler queue = post "webhook" (hook queue) <|> writeText "ok\n"
-    post p = path p . Snap.Core.method POST
 
 
 -- | The handler of the webhook. It parses the request body as an GitHub event
