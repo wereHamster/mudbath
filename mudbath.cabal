@@ -25,5 +25,6 @@ Executable mudbath
     Build-Depends:  stm
     Build-Depends:  text
     Build-Depends:  transformers  >= 0.4
+    Build-Depends:  cryptohash
 
     Ghc-Options:    -threaded -Wall
