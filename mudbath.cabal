@@ -21,6 +21,12 @@ description:
 Executable mudbath
     Main-Is:        Main.hs
 
+    Other-Modules:
+        Executor,
+        GitHub,
+        Http,
+        Notifications
+
     Build-Depends:  aeson
     Build-Depends:  base          >= 4.0 && < 5
     Build-Depends:  bytestring
