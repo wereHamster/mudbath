@@ -8,6 +8,16 @@ category:            Testing
 build-type:          Simple
 cabal-version:       >=1.8
 
+synopsis:            Continuous deployment server for use with GitHub
+description:
+    Mudbath is continuous deployment server which integrates with GitHub. It
+    listens for deployment events and when it receives one, executes a shell
+    script. It reports progress back to GitHub in the form of deployment
+    status updates.
+
+    Mudbath can also send notifications to Slack if the proper keys are
+    provided. Other notification sinks can be easily added if needed.
+
 Executable mudbath
     Main-Is:        Main.hs
 
