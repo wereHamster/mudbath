@@ -1,0 +1,28 @@
+#!/bin/sh
+
+OLDVERSION="$(grep -i ^version *.cabal | awk '{ print $2 }')"
+echo -n "The current version is $OLDVERSION. Enter the new version: "
+read NEWVERSION
+
+if test -z "$NEWVERSION"; then
+    exit
+fi
+
+if test "v$NEWVERSION" = "$(git describe)"; then
+    echo "Tag $NEWVERSION already exists. Exiting..."
+    exit
+fi
+
+sed -i "s/$OLDVERSION/$NEWVERSION/" mudbath.cabal
+git add mudbath.cabal
+
+git commit -m v$NEWVERSION
+git tag -a -s -m v$NEWVERSION v$NEWVERSION
+
+cabal sdist
+
+echo -n "Press enter to upload version $NEWVERSION to hackage"
+read OK
+
+cabal upload dist/mudbath-$NEWVERSION.tar.gz
+git push origin v$NEWVERSION
