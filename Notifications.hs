@@ -77,6 +77,7 @@ notifySlack ev = do
 
     env        = deploymentEnvironment deployment
 
+    sendRequest :: String -> String ->IO ()
     sendRequest team token = do
         req <- parseUrl $ "https://" <> team <> ".slack.com/services/hooks/incoming-webhook?token=" <> token
 
