@@ -68,8 +68,8 @@ main = do
 --
 -- Some events are processed immediately, others are put into the queuer to
 -- process them in the background thread.
-hook :: TQueue Event -> Either Error Event -> Snap ()
-hook queue res = case res of
+handleEvent :: TQueue Event -> Either Error Event -> Snap ()
+handleEvent queue res = case res of
     Left _ -> do
         writeText "error\n"
     Right ev -> liftIO $ case ev of
