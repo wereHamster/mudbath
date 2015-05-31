@@ -18,6 +18,12 @@ description:
     Mudbath can also send notifications to Slack if the proper keys are
     provided. Other notification sinks can be easily added if needed.
 
+
+Source-Repository head
+    Type:     git
+    Location: git://github.com/wereHamster/mudbath.git
+
+
 Executable mudbath
     Main-Is:        Main.hs
 
