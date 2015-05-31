@@ -42,7 +42,8 @@ Executable mudbath
     Build-Depends:  text
     Build-Depends:  transformers  >= 0.4
     Build-Depends:  cryptohash
+    Build-Depends:  uuid
     Build-Depends:  github-webhook-handler
-    Build-Depends:  github-webhook-handler-snap
+    Build-Depends:  github-webhook-handler-snap >= 0.0.2 && < 1
 
     Ghc-Options:    -threaded -Wall

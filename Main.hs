@@ -5,15 +5,9 @@ module Main where
 import           Snap.Core
 import           Snap.Http.Server
 
-import           Crypto.Hash
-
-import           Data.Monoid
-import           Data.Aeson hiding (Success, Error)
-import           Data.Aeson.Types (parseMaybe)
-import           Data.Text.Encoding
 import           Data.Maybe
-import qualified Data.ByteString.Lazy  as LBS
 import qualified Data.ByteString.Char8 as BC8
+import           Data.UUID
 
 import           Control.Applicative
 import           Control.Concurrent (forkIO)
@@ -30,6 +24,8 @@ import           GitHub.WebHook.Handler.Snap
 
 import           Executor
 import           Notifications
+
+import           Prelude
 
 
 
@@ -68,11 +64,11 @@ main = do
 --
 -- Some events are processed immediately, others are put into the queuer to
 -- process them in the background thread.
-handleEvent :: TQueue Event -> Either Error Event -> Snap ()
+handleEvent :: TQueue Event -> Either Error (UUID, Event) -> Snap ()
 handleEvent queue res = case res of
     Left _ -> do
         writeText "error\n"
-    Right ev -> liftIO $ case ev of
+    Right (_, ev) -> liftIO $ case ev of
         (DeploymentEventType _) -> atomically $ writeTQueue queue ev
         _                       -> processEvent ev
 
