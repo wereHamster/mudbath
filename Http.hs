@@ -13,15 +13,15 @@ import qualified Data.Text                   as T
 import qualified Data.ByteString.Char8       as C
 import qualified Data.ByteString             as BS
 
-import           Network.HTTP.Conduit (RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl, withManager, applyBasicAuth)
+import           Network.HTTP.Conduit (Manager, RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl, applyBasicAuth)
 import           Network.HTTP.Types.Method (methodPost)
 
 
 
-httpPOST :: (ToJSON a) => Text -> Text -> a -> IO ()
-httpPOST url token obj = do
+httpPOST :: (ToJSON a) => Manager -> Text -> Text -> a -> IO ()
+httpPOST httpManager url token obj = do
     req0 <- parseUrl (T.unpack url)
-    void $ withManager $ httpLbs (req1 req0)
+    void $ httpLbs (req1 req0) httpManager
   where
     body         = RequestBodyLBS $ encode obj
     userAgent    = ("User-Agent", BS.concat [ "mudbath/0" ])

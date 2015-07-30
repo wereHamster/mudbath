@@ -12,6 +12,8 @@ import qualified Data.Text                   as T
 
 import           System.Environment (getEnv)
 
+import           Network.HTTP.Conduit
+
 import           GitHub.Types
 import           Http
 
@@ -23,8 +25,8 @@ getEnvVar = CE.try . getEnv
 
 -- | Update the deployment status on GitHub. This requires an access token,
 -- which is read from the environment.
-updateDeploymentStatus :: DeploymentEvent -> State -> IO ()
-updateDeploymentStatus de state =
+updateDeploymentStatus :: Manager -> DeploymentEvent -> State -> IO ()
+updateDeploymentStatus httpManager de state =
     getEnvVar "GITHUB_ACCESS_TOKEN" >>= either (\_ -> return ()) sendRequest
 
   where
@@ -35,5 +37,5 @@ updateDeploymentStatus de state =
 
 
     sendRequest token = do
-        httpPOST url (T.pack token) $
+        httpPOST httpManager url (T.pack token) $
             CreateDeploymentStatusRequest state Nothing Nothing

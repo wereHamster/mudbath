@@ -18,6 +18,8 @@ import           System.Exit
 import           System.Process (CreateProcess, createProcess, proc, waitForProcess)
 import           System.Random
 
+import           Network.HTTP.Conduit
+
 import           GitHub
 import           GitHub.Types
 
@@ -25,12 +27,12 @@ import           Prelude
 
 
 
-executeDeploymentScript :: DeploymentEvent -> IO ()
-executeDeploymentScript ev = do
-    updateDeploymentStatus ev Pending
+executeDeploymentScript :: Manager -> DeploymentEvent -> IO ()
+executeDeploymentScript httpManager ev = do
+    updateDeploymentStatus httpManager ev Pending
 
     tmp <- buildDirectory
-    deploy ev tmp
+    deploy httpManager ev tmp
 
 
 randomString :: RandomGen d => Int -> d -> (String, d)
@@ -78,9 +80,9 @@ spawn x = do
     waitForProcess p
 
 
-deploy :: DeploymentEvent -> Text -> IO ()
-deploy de tmp = do
-    clone >>= test >>= updateDeploymentStatus de >> cleanup
+deploy :: Manager-> DeploymentEvent -> Text -> IO ()
+deploy httpManager de tmp = do
+    clone >>= test >>= updateDeploymentStatus httpManager de >> cleanup
 
   where
     d            = deploymentEventDeployment de

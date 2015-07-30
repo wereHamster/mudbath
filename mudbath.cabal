@@ -40,6 +40,7 @@ Executable mudbath
     Build-Depends:  github-types  == 0.1.0.5
     Build-Depends:  http-conduit
     Build-Depends:  http-types
+    Build-Depends:  http-client-tls
     Build-Depends:  process
     Build-Depends:  random
     Build-Depends:  snap-core

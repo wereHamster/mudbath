@@ -18,7 +18,7 @@ import qualified Data.Text                   as T
 
 import           System.Environment (getEnv)
 
-import           Network.HTTP.Conduit (RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl, withManager)
+import           Network.HTTP.Conduit (Manager, RequestBody(..), Request(requestBody,requestHeaders,method), httpLbs, parseUrl)
 import           Network.HTTP.Types.Method (methodPost)
 
 import           GitHub.Types
@@ -33,9 +33,9 @@ import           GitHub.Types
 --
 --  * slack: SLACK_TEAM, SLACK_TOKEN
 
-notifyDeploymentStatusChange :: DeploymentStatusEvent -> IO ()
-notifyDeploymentStatusChange ev = do
-    notifySlack ev
+notifyDeploymentStatusChange :: Manager -> DeploymentStatusEvent -> IO ()
+notifyDeploymentStatusChange httpManager ev = do
+    notifySlack httpManager ev
 
 
 
@@ -53,8 +53,8 @@ instance ToJSON SlackMessage where
     toJSON SlackMessage{..} = object [ "text" .= smText ]
 
 
-notifySlack :: DeploymentStatusEvent -> IO ()
-notifySlack ev = do
+notifySlack :: Manager -> DeploymentStatusEvent -> IO ()
+notifySlack httpManager ev = do
     mbConfig <- runExceptT $ do
         team  <- ExceptT $ getEnvVar "SLACK_TEAM"
         token <- ExceptT $ getEnvVar "SLACK_TOKEN"
@@ -88,4 +88,4 @@ notifySlack ev = do
         let contentType = ("Content-Type","application/json")
         let req' = req { Network.HTTP.Conduit.method = methodPost, requestBody = body, requestHeaders = contentType : requestHeaders req }
 
-        void $ withManager $ httpLbs req'
+        void $ httpLbs req' httpManager
