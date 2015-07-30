@@ -21,6 +21,9 @@ import           System.Random
 import           GitHub
 import           GitHub.Types
 
+import           Prelude
+
+
 
 executeDeploymentScript :: DeploymentEvent -> IO ()
 executeDeploymentScript ev = do
@@ -80,15 +83,16 @@ deploy de tmp = do
     clone >>= test >>= updateDeploymentStatus de >> cleanup
 
   where
-    d     = deploymentEventDeployment de
-    sha   = deploymentSha d
-    repo  = deploymentEventRepository de
-    dEnv  = deploymentEnvironment d
-    repoName = repositoryFullName repo
+    d            = deploymentEventDeployment de
+    sha          = deploymentSha d
+    repo         = deploymentEventRepository de
+    dEnv         = deploymentEnvironment d
+    fullRepoName = repositoryFullName repo
+    cachePath    = "/var/cache/mudbath/repo/" <> fullRepoName
+    url          = "git@github.com:" <> fullRepoName <> ".git"
+    script       = "./config/" <> fullRepoName <> "/" <> dEnv
 
     clone = do
-        let cachePath = "/tmp/mudbath/cache/" <> repoName
-        let url = "git@github.com:" <> repoName <> ".git"
         exitCode <- spawn $ proc "sh" [ "-c", setupScript cachePath tmp url sha ]
         print $ "clone " ++ show exitCode
         case exitCode of
@@ -97,7 +101,6 @@ deploy de tmp = do
 
     test Error = return Error
     test _ = do
-        let script = "./config/" <> repoName <> "/" <> dEnv
         print $ show $ "executing " <> script
         exitCode <- spawn $ proc (T.unpack script) [T.unpack tmp]
         print $ "test " ++ show exitCode
