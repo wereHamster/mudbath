@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Executor
-    ( executeDeploymentScript
+    ( buildDirectory
+    , setupScript
     ) where
 
 
@@ -13,26 +14,10 @@ import           Data.Monoid
 import           Control.Applicative
 import           Control.Arrow
 
-import           System.Directory
-import           System.Exit
-import           System.Process (CreateProcess, createProcess, proc, waitForProcess)
 import           System.Random
-
-import           Network.HTTP.Conduit
-
-import           GitHub
-import           GitHub.Types
 
 import           Prelude
 
-
-
-executeDeploymentScript :: Manager -> DeploymentEvent -> IO ()
-executeDeploymentScript httpManager ev = do
-    updateDeploymentStatus httpManager ev Pending
-
-    tmp <- buildDirectory
-    deploy httpManager ev tmp
 
 
 randomString :: RandomGen d => Int -> d -> (String, d)
@@ -57,8 +42,7 @@ generateRandomString = do
 
 
 buildDirectory :: IO Text
-buildDirectory = mappend "/tmp/mudbath/build/" <$> generateRandomString
-
+buildDirectory = mappend "/tmp/mudbath/" <$> generateRandomString
 
 
 setupScript :: Text -> Text -> Text -> Text -> String
@@ -73,41 +57,3 @@ setupScript cachePath buildPath url commit = T.unpack $ mconcat $ Data.List.inte
     , "cd " <> buildPath
     , "git checkout -q " <> commit
     ]
-
-spawn :: CreateProcess -> IO ExitCode
-spawn x = do
-    (_, _, _, p) <- createProcess x
-    waitForProcess p
-
-
-deploy :: Manager-> DeploymentEvent -> Text -> IO ()
-deploy httpManager de tmp = do
-    clone >>= test >>= updateDeploymentStatus httpManager de >> cleanup
-
-  where
-    d            = deploymentEventDeployment de
-    sha          = deploymentSha d
-    repo         = deploymentEventRepository de
-    dEnv         = deploymentEnvironment d
-    fullRepoName = repositoryFullName repo
-    cachePath    = "/var/cache/mudbath/repo/" <> fullRepoName
-    url          = "git@github.com:" <> fullRepoName <> ".git"
-    script       = "./config/" <> fullRepoName <> "/" <> dEnv
-
-    clone = do
-        exitCode <- spawn $ proc "sh" [ "-c", setupScript cachePath tmp url sha ]
-        print $ "clone " ++ show exitCode
-        case exitCode of
-            ExitSuccess -> return Success
-            _           -> return Error
-
-    test Error = return Error
-    test _ = do
-        print $ show $ "executing " <> script
-        exitCode <- spawn $ proc (T.unpack script) [T.unpack tmp]
-        print $ "test " ++ show exitCode
-        case exitCode of
-            ExitSuccess -> return Success
-            _           -> return Failure
-
-    cleanup = removeDirectoryRecursive $ T.unpack tmp
